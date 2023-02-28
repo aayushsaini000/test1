@@ -2,8 +2,70 @@ from flask import Flask, request, jsonify
 import base64
 import subprocess
 import os
+import json
+
 
 app = Flask(__name__)
+
+
+
+USERS_FILE = 'users.json'
+
+def get_users():
+    try:
+        with open(USERS_FILE, 'r') as f:
+            users = json.load(f)
+    except FileNotFoundError:
+        users = []
+    
+    return users
+
+def save_users(users):
+    with open(USERS_FILE, 'w') as f:
+        json.dump(users, f)
+
+@app.route('/signup', methods=['POST'])
+def signup():
+    data = request.get_json()
+    if 'name' not in data or 'email' not in data or 'phone' not in data or 'password' not in data:
+        return jsonify({'error': 'missing fields'}), 400
+    
+    users = get_users()
+    
+    for user in users:
+        if user['email'] == data['email']:
+            return jsonify({'error': 'user already exists'}), 409
+    
+    user = {
+        'name': data['name'],
+        'email': data['email'],
+        'phone': data['phone'],
+        'password': data['password']
+    }
+    
+    users.append(user)
+    
+    save_users(users)
+    
+    return jsonify({'message': 'signup successful'}), 200
+
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    if 'email' not in data or 'password' not in data:
+        return jsonify({'error': 'missing fields'}), 400
+    
+    users = get_users()
+    
+    for user in users:
+        if user['email'] == data['email'] and user['password'] == data['password']:
+            return jsonify({'message': 'login successful'}), 200
+    
+    return jsonify({'error': 'invalid credentials'}), 401
+
+
+
+
 
 @app.route('/process_pdf', methods=['POST'])
 def process_pdf():
