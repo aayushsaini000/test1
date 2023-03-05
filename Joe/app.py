@@ -92,5 +92,24 @@ def process_pdf():
     
     return jsonify({'message': 'processing complete'}), 200
 
+
+import csv
+from flask import jsonify
+
+@app.route('/get_data')
+def get_data():
+    data = []
+    with open('output.csv', mode='r') as csv_file:
+        csv_reader = csv.reader(csv_file)
+        for row in csv_reader:
+            try:
+                name, address, city_state, col118, col119 = row
+                data.append({'Name': name, 'Address': address, 'City/State': city_state, '118': col118, '119': col119})
+            except ValueError:
+                # handle rows with more than 5 values here
+                pass
+    return jsonify(data)
+
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True,host="0.0.0.0",port=3002)
