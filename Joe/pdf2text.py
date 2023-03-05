@@ -709,26 +709,35 @@ if textpage:  # If there is encoded text within the pdf, it will extract that.
 else:  # If there is no text, it will start the OCR.
     output = ocr_pdf(pdf)
 
-# with open(f"{output_name}.csv", "w+", newline="") as myfile:
-#     wr = csv.writer(myfile)
-#     wr.writerow(["Name", "Address", "Address 1", "118", "119"])
-#     wr.writerows(output)
-#     # if isinstance(output, int):
-#     #     output = [[output]]  
-#     #     wr.writerows(output)
+# create a new Process object with the name of the uploaded file and the binary data of the file
+# process_obj = Process(name=output_name, pdf_data=pdf)
+
+# loop through the output data and create a dictionary for each row
+rows = []
+for key, value in output.items():
+    row = {
+        "Name": value['Driver 1'],
+        "Address": value['Address 1'],
+        "City/State": "",  # City/State is not provided in the dictionary
+        "118": value['118a'],
+        "119": value['119a']
+    }
+    rows.append(row)
 
 
-with open(f"{output_name}.csv", mode='w+', newline='') as file:
-    writer = csv.writer(file)
-    writer.writerow(["Name", "Address", "City/State", "118", "119"])
-    
-    for key, value in output.items():
-        row = [
-            value['Driver 1'],
-            value['Address 1'],
-            '',  # City/State is not provided in the dictionary
-            value['118a'],
-            value['119a']
-        ]
-        
-        writer.writerow(row)
+import requests
+
+url = "http://127.0.0.1:5000/process"
+
+# Define the data to be sent in the request
+data = {
+    "name": output_name,
+    "rows": rows
+}
+
+# Send a POST request with the data
+response = requests.post(url, json=data)
+# add the rows to the process_obj and save to the database
+# print(rows)
+# process_obj.rows = rows
+# save_to_db(process_obj)
