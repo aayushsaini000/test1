@@ -51,10 +51,28 @@ def get_users():
 
 
 
+@app.route('/files/<int:user_id>', methods=['GET'])
+def get_processes_by_user(user_id):
+    processes = Process.query.filter_by(user_id=user_id).all()
+    if not processes:
+        return jsonify({'error': 'no processes found for user'}), 404
 
-@app.route('/get_data/<filename>')
-def get_data(filename):
-    process = Process.query.filter_by(name=filename).first()
+    results = []
+    for process in processes:
+        results.append({
+            'id': process.id,
+            'filename': process.name,
+            'created_at': process.created_at
+        })
+
+    return jsonify(results), 200
+
+
+
+
+@app.route('/get_data/<int:id>')
+def get_data(id):
+    process = Process.query.filter_by(id=id).first()
     if process:
         rows = process.rows
         # data = [
@@ -72,7 +90,7 @@ def create_process():
     data = request.json
     
     # Create a new Process object
-    process_obj = Process(name=data['name'], rows=data['rows'], user_id=5)
+    process_obj = Process(name=data['name'], rows=data['rows'], user_id=data["user_id"])
     
     # Add the object to the database session
     db.session.add(process_obj)
@@ -104,19 +122,37 @@ def signup():
     
     save_to_db(user)
     
-    return jsonify({'message': 'signup successful'}), 200
+    user_info = {
+        'id': user.id,
+        'name': user.name,
+        'email': user.email,
+        'phone': user.phone
+    }
+    
+    return jsonify({'user': user_info, 'message': 'signup successful'}), 200
+
+
 
 @app.route('/login', methods=['POST'])
 def login():
     data = request.get_json()
     if 'email' not in data or 'password' not in data:
         return jsonify({'error': 'missing fields'}), 400
-    
+
     user = User.query.filter_by(email=data['email'], password=data['password']).first()
     if user:
-        return jsonify({'message': 'login successful'}), 200
-    
+        return jsonify({
+            'message': 'login successful',
+            'user': {
+                'id': user.id,
+                'name': user.name,
+                'email': user.email,
+                'phone': user.phone
+            }
+        }), 200
+
     return jsonify({'error': 'invalid credentials'}), 401
+
 
 
 
@@ -142,9 +178,14 @@ def process_pdf():
     # write base64 data to a file in binary format
     with open(filename, 'wb') as f:
         f.write(base64.b64decode(file_base64))
-    
-    # run the command in the background with file path as argument
-    subprocess.Popen(['python3', 'pdf2text.py', filename]).wait()
+
+    # get user id from form-data
+    user_id = request.form.get('user_id')
+    if not user_id:
+        return jsonify({'error': 'please send user_id'}), 400
+
+    # run the command in the background with file path and user id as arguments
+    subprocess.Popen(['python3', 'pdf2text.py', filename, str(user_id)]).wait()
     
     # delete the file
     os.remove(filename)

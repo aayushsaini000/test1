@@ -13,8 +13,11 @@ parser = argparse.ArgumentParser(
     description="Process PDF files of NJPD Crash Reports to return wanted values."
 )
 parser.add_argument("pdf_file", metavar="file", help="path to file")
+parser.add_argument("user_id", metavar="user_id", help="current user id")
+
 args = parser.parse_args()
 file = args.pdf_file
+user_id = args.user_id
 
 # if "/" in file:
 #     output_name = file[:-4].replace("/", "_")
@@ -732,7 +735,8 @@ url = "http://127.0.0.1:5000/process"
 # Define the data to be sent in the request
 data = {
     "name": output_name,
-    "rows": rows
+    "rows": rows,
+    "user_id":user_id
 }
 
 # Send a POST request with the data
